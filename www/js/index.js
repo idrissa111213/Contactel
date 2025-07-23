@@ -2,214 +2,264 @@
 let currentContact = null;
 let allContacts = [];
 let isEditMode = false;
+let isAppReady = false;
 
-// Initialisation au démarrage de l'appareil
-document.addEventListener("deviceready", loadContacts);
+// Configuration jQuery Mobile AVANT l'initialisation
+$(document).bind('mobileinit', function() {
+    $.mobile.defaultPageTransition = 'slide';
+    $.mobile.defaultDialogTransition = 'pop';
+    $.mobile.phonegapNavigationEnabled = true;
+    $.mobile.hashListeningEnabled = false;
+});
 
-// Initialisation pour le test en navigateur
+// Initialisation de l'application
+document.addEventListener("deviceready", function() {
+    console.log("Device ready - Chargement des contacts...");
+    isAppReady = true;
+    initializeApp();
+}, false);
+
+// Pour le test dans le navigateur (sans Cordova)
 $(document).ready(function() {
-    // Si pas de Cordova, simuler les contacts après un délai
+    // Attendre que jQuery Mobile soit initialisé
     setTimeout(function() {
-        if (!window.cordova) {
-            console.log("Mode simulation - Pas de Cordova détecté");
-            simulateContacts();
+        if (!window.cordova && !isAppReady) {
+            console.log("Mode test navigateur - Simulation des contacts");
+            isAppReady = true;
+            initializeApp();
         }
     }, 1000);
 });
 
-//Charge les contacts depuis l'appareil 
-function loadContacts() {
-    if (!navigator.contacts) {
+/**
+ * Initialise l'application une fois que tout est prêt
+ */
+function initializeApp() {
+    console.log("Initialisation de l'application...");
+    showDebugInfo("Application initialisée - Chargement des contacts...");
+    
+    if (navigator.contacts) {
+        loadContacts();
+    } else {
         console.log("API Contacts non disponible - Mode simulation");
+        simulateContacts();
+    }
+}
+
+/**
+ * Charge les contacts depuis l'appareil
+ */
+function loadContacts() {
+    showDebugInfo("Tentative de chargement des contacts...");
+    
+    if (!navigator.contacts) {
+        console.error("API Contacts non disponible");
+        showDebugInfo("API Contacts non disponible. Basculement en mode simulation.");
         simulateContacts();
         return;
     }
 
-    let options = new ContactFindOptions();
-    options.multiple = true;
-    options.hasPhoneNumber = true;
-    let fields = ["*"];
-
-    navigator.contacts.find(fields, showContacts, onError, options);
+    try {
+        const options = new ContactFindOptions();
+        options.multiple = true;
+        options.hasPhoneNumber = false; // Changé à false pour récupérer TOUS les contacts
+        
+        const fields = ["displayName", "name", "phoneNumbers", "emails"];
+        
+        showDebugInfo("Recherche en cours...");
+        navigator.contacts.find(fields, 
+            function(contacts) {
+                console.log("Contacts trouvés:", contacts.length);
+                showContacts(contacts);
+            }, 
+            function(error) {
+                console.error("Erreur lors du chargement:", error);
+                showDebugInfo("Erreur de chargement - Basculement en mode simulation");
+                simulateContacts();
+            }, 
+            options
+        );
+    } catch (error) {
+        console.error("Exception lors du chargement des contacts:", error);
+        showDebugInfo("Exception capturée - Mode simulation activé");
+        simulateContacts();
+    }
 }
 
-/* Simule des contacts pour les tests */
+/**
+ * Simule des contacts pour les tests en mode navigateur
+ */
 function simulateContacts() {
     const demoContacts = [
         {
-            id: "demo1",
-            displayName: "Fatou Diop",
-            name: { givenName: "Fatou", familyName: "Diop" },
-            phoneNumbers: [{ value: "+221 77 123 45 67", type: "mobile" }],
-            emails: [{ value: "fatou.diop@example.sn", type: "home" }],
-            photos: [{ value: "https://randomuser.me/api/portraits/women/65.jpg" }]
+            id: "1",
+            displayName: "Jean Dupont",
+            name: { givenName: "Jean", familyName: "Dupont" },
+            phoneNumbers: [{ value: "+33 6 12 34 56 78", type: "mobile" }],
+            emails: [{ value: "jean.dupont@email.com", type: "home" }]
         },
         {
-            id: "demo2",
-            displayName: "Mamadou Ndiaye",
-            name: { givenName: "Mamadou", familyName: "Ndiaye" },
-            phoneNumbers: [{ value: "+221 78 234 56 78", type: "mobile" }],
-            emails: [{ value: "mamadou.ndiaye@example.sn", type: "work" }],
-            photos: [{ value: "https://randomuser.me/api/portraits/men/45.jpg" }]
+            id: "2",
+            displayName: "Marie Martin",
+            name: { givenName: "Marie", familyName: "Martin" },
+            phoneNumbers: [{ value: "+33 6 98 76 54 32", type: "mobile" }],
+            emails: [{ value: "marie.martin@email.com", type: "work" }]
         },
         {
-            id: "demo3",
-            displayName: "Awa Fall",
-            name: { givenName: "Awa", familyName: "Fall" },
-            phoneNumbers: [{ value: "+221 76 345 67 89", type: "mobile" }],
-            emails: [{ value: "awa.fall@example.sn", type: "home" }],
-            photos: [{ value: "https://randomuser.me/api/portraits/women/75.jpg" }]
+            id: "3",
+            displayName: "Pierre Durand",
+            name: { givenName: "Pierre", familyName: "Durand" },
+            phoneNumbers: [{ value: "+33 6 11 22 33 44", type: "mobile" }]
         },
         {
-            id: "demo4",
-            displayName: "Cheikh Ba",
-            name: { givenName: "Cheikh", familyName: "Ba" },
-            phoneNumbers: [{ value: "+221 70 456 78 90", type: "mobile" }],
-            emails: [{ value: "cheikh.ba@example.sn", type: "work" }],
-            photos: [{ value: "https://randomuser.me/api/portraits/men/35.jpg" }]
+            id: "4",
+            displayName: "Sophie Leroy",
+            name: { givenName: "Sophie", familyName: "Leroy" },
+            phoneNumbers: [{ value: "+33 6 55 66 77 88", type: "mobile" }],
+            emails: [{ value: "sophie.leroy@email.com", type: "home" }]
         },
         {
-            id: "demo5",
-            displayName: "Seynabou Sow",
-            name: { givenName: "Seynabou", familyName: "Sow" },
-            phoneNumbers: [{ value: "+221 75 567 89 01", type: "mobile" }],
-            emails: [{ value: "seynabou.sow@example.sn", type: "home" }],
-            photos: [{ value: "https://randomuser.me/api/portraits/women/32.jpg" }]
+            id: "5",
+            displayName: "Michel Blanc",
+            name: { givenName: "Michel", familyName: "Blanc" },
+            phoneNumbers: [{ value: "+33 6 99 88 77 66", type: "mobile" }]
         }
     ];
-    
-    console.log("Contacts simulés chargés:", demoContacts.length);
     showContacts(demoContacts);
 }
 
-/* Affiche les contacts dans la liste */
+/**
+ * Affiche la liste des contacts dans l'interface
+ * @param {Array} contacts - Liste des contacts à afficher
+ */
 function showContacts(contacts) {
+    console.log("Affichage de", contacts.length, "contacts");
     allContacts = contacts;
-    let contactsHtml = "";
     
+    // Cacher les infos de debug après succès
+    setTimeout(() => $("#debugInfo").fadeOut(), 2000);
+    
+    if (contacts.length === 0) {
+        $("#noContacts").show();
+        $("#contactList").hide().empty();
+        return;
+    }
+    
+    $("#noContacts").hide();
+    $("#contactList").show();
+    
+    // Trier les contacts par nom
+    contacts.sort((a, b) => {
+        const nameA = getContactName(a).toLowerCase();
+        const nameB = getContactName(b).toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+    
+    // Construire le HTML de la liste
+    let html = "";
     for (let i = 0; i < contacts.length; i++) {
         const contact = contacts[i];
-        const nom = getContactName(contact);
-        const photo = getContactPhoto(contact);
-        const phoneInfo = getContactPhoneInfo(contact);
+        const name = getContactName(contact);
+        const number = getContactPhone(contact);
         
-        contactsHtml += `
+        html += `
             <li data-contact-index="${i}">
-                <a href="#pageDetail" onclick="showContactDetail(${i})">
-                    <img src="${photo}">
-                    <h2>${nom}</h2>
-                    <p>${phoneInfo}</p>
+                <a href="#detailPage" onclick='showContactDetail(${i}); return false;'>
+                    <h2>${name}</h2>
+                    <p>${number}</p>
                 </a>
             </li>
         `;
     }
     
-    const contactList = document.getElementById("contactList");
-    if (contactList) {
-        contactList.innerHTML = contactsHtml;
-        try {
-            $(contactList).listview("refresh");
-        } catch (e) {
-            // Si listview pas encore initialisée
-            $(contactList).trigger("create");
-        }
+    $("#contactList").html(html);
+    
+    // Rafraîchir la listview si elle existe déjà
+    try {
+        $("#contactList").listview("refresh");
+    } catch (e) {
+        // Si la listview n'est pas encore initialisée, l'initialiser
+        $("#contactList").trigger("create");
     }
     
-    console.log(`${contacts.length} contacts affichés`);
+    console.log("Liste des contacts mise à jour avec", contacts.length, "éléments");
 }
 
-/* Affiche le détail d'un contact */
+/**
+ * Affiche les détails d'un contact
+ * @param {number} index - Index du contact dans la liste
+ */
 function showContactDetail(index) {
     currentContact = allContacts[index];
     const name = getContactName(currentContact);
     const phone = getContactPhone(currentContact);
     const email = getContactEmail(currentContact);
-    const photo = getContactPhoto(currentContact);
     
     let detailHtml = `
-        <div class="contact-photo">
-            <img src="${photo}" alt="${name}" class="contact-detail-photo">
-        </div>
-        <div class="contact-name">
-            <h2>${name}</h2>
-        </div>
-        <div class="contact-info">
-            <div class="info-item">
-                <span class="info-icon">📞</span>
-                <span class="info-label">Téléphone</span>
-                <span class="info-value">${phone}</span>
-            </div>
+        <h2>${name}</h2>
+        <p><strong>Téléphone :</strong> ${phone}</p>
     `;
     
     if (email) {
-        detailHtml += `
-            <div class="info-item">
-                <span class="info-icon">✉️</span>
-                <span class="info-label">Email</span>
-                <span class="info-value">${email}</span>
-            </div>
-        `;
+        detailHtml += `<p><strong>Email :</strong> ${email}</p>`;
     }
     
-    detailHtml += `</div>`;
+    if (currentContact.id) {
+        detailHtml += `<p><small>ID : ${currentContact.id}</small></p>`;
+    }
     
     $("#contactDetail").html(detailHtml);
 }
 
-/* l'ajout d'un nouveau contact */
+/**
+ * Prépare l'interface pour créer un nouveau contact
+ */
 function newContact() {
-    console.log("=== NOUVEAU CONTACT ===");
     currentContact = null;
     isEditMode = false;
     $("#formTitle").text("Nouveau Contact");
     clearForm();
 }
 
-/*  la modification du contact actuel */
+/**
+ * Prépare l'interface pour modifier le contact actuel
+ */
 function editCurrentContact() {
-    console.log("=== DÉBUT ÉDITION ===");
-    
-    if (!currentContact) {
-        console.log("Erreur: Aucun contact sélectionné pour édition");
-        return false;
-    }
+    if (!currentContact) return;
     
     isEditMode = true;
     $("#formTitle").text("Modifier Contact");
     
-    // Remplir le formulaire
+    // Remplir le formulaire avec les données existantes
     $("#contactId").val(currentContact.id || "");
-    $("#contactName").val(getContactName(currentContact));
-    $("#contactPhone").val(getContactPhone(currentContact));
-    $("#contactEmail").val(getContactEmail(currentContact));
+    $("#name").val(getContactName(currentContact));
+    $("#phone").val(getContactPhone(currentContact));
+    $("#email").val(getContactEmail(currentContact));
     
-    console.log("Formulaire rempli, navigation vers page formulaire");
-    $.mobile.changePage("#pageForm");
-    
-    return false;
+    $.mobile.changePage("#formPage");
 }
 
-/* Retour à la liste des contacts */
+/**
+ * Retourne à la liste des contacts
+ */
 function backToList() {
-    console.log("Retour à la liste des contacts");
     currentContact = null;
     $.mobile.changePage("#pageContacts");
 }
 
-/* Annule l'édition */
+/**
+ * Annule l'édition et retourne à la page précédente
+ */
 function cancelForm() {
-    console.log("Annulation du formulaire");
     if (currentContact) {
-        // Si on modifiait un contact, retourner au détail
-        $.mobile.changePage("#pageDetail");
+        $.mobile.changePage("#detailPage");
     } else {
-        // Si on créait un nouveau contact, retourner à la liste
         $.mobile.changePage("#pageContacts");
     }
 }
 
 /**
- * Vide le formulaire
+ * Vide le formulaire de contact
  */
 function clearForm() {
     $("#contactForm")[0].reset();
@@ -217,381 +267,373 @@ function clearForm() {
 }
 
 /**
- * Appelle le contact
+ * Initie un appel téléphonique vers le contact actuel
  */
 function callContact() {
-    console.log("=== DÉBUT APPEL ===");
-    
-    if (!currentContact) {
-        console.log("Erreur: Aucun contact sélectionné pour appel");
-        alert("Aucun contact sélectionné.");
-        return false;
-    }
-    
-    const phone = getContactPhone(currentContact);
-    console.log("Numéro à appeler:", phone);
-    
-    if (phone && phone !== "Pas de téléphone") {
-        try {
-            console.log("Lancement de l'appel...");
-            window.open(`tel:${phone}`, '_system');
-        } catch (error) {
-            console.error("Erreur lors de l'appel:", error);
-            alert("Impossible de lancer l'appel. Numéro: " + phone);
+    if (currentContact) {
+        const phone = getContactPhone(currentContact);
+        if (phone && phone !== "Pas de téléphone") {
+            window.open(`tel:${phone}`);
+        } else {
+            alert("Aucun numéro de téléphone disponible pour ce contact.");
         }
-    } else {
-        console.log("Aucun numéro de téléphone disponible");
-        alert("Aucun numéro de téléphone disponible pour ce contact.");
     }
-    
-    return false;
 }
 
 /**
- * Supprime le contact actuel
+ * Supprime le contact actuel après confirmation
  */
 function deleteCurrentContact() {
-    console.log("=== DÉBUT SUPPRESSION ===");
-    
-    if (!currentContact) {
-        console.log("Erreur: Aucun contact sélectionné");
-        alert("Aucun contact sélectionné.");
-        return false;
-    }
+    if (!currentContact) return;
     
     const contactName = getContactName(currentContact);
-    console.log("Contact à supprimer:", contactName);
-    
-    // Demander confirmation
-    const confirmDelete = confirm(`Voulez-vous vraiment supprimer "${contactName}" ?\n\nCette action est irréversible.`);
-    console.log("Confirmation utilisateur:", confirmDelete);
-    
-    if (!confirmDelete) {
-        console.log("Suppression annulée par l'utilisateur");
-        return false;
-    }
-    
-    // Mode simulation (toujours utilisé pour éviter les problèmes)
-    console.log("=== SUPPRESSION EN MODE SIMULATION ===");
-    try {
-        console.log("Nombre de contacts avant suppression:", allContacts.length);
-        console.log("ID du contact à supprimer:", currentContact.id);
-        
-        // Trouver l'index du contact
-        const contactIndex = allContacts.findIndex(c => c.id === currentContact.id);
-        console.log("Index trouvé:", contactIndex);
-        
-        if (contactIndex !== -1) {
-            // Supprimer le contact de la liste
-            allContacts.splice(contactIndex, 1);
-            console.log("Contact supprimé! Contacts restants:", allContacts.length);
-            
-            // Nettoyer la variable
-            currentContact = null;
-            
-            // Afficher le message de succès
-            alert("Contact supprimé avec succès !");
-            
-            // Retourner à la liste
-            console.log("Retour à la liste...");
-            $.mobile.changePage("#pageContacts");
-            
-            // Mettre à jour l'affichage après un délai
-            setTimeout(() => {
-                console.log("Mise à jour de l'affichage...");
-                showContacts(allContacts);
-            }, 300);
-            
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le contact "${contactName}" ?`)) {
+        if (navigator.contacts && currentContact.remove) {
+            // Suppression via l'API Cordova
+            currentContact.remove(
+                function() {
+                    alert("Contact supprimé !");
+                    $.mobile.changePage("#pageContacts");
+                    loadContacts();
+                },
+                onContactError
+            );
         } else {
-            console.error("ERREUR: Contact non trouvé dans la liste!");
-            alert("Erreur : Contact non trouvé dans la liste.");
+            // Mode simulation - suppression de la liste locale
+            allContacts = allContacts.filter(c => c.id !== currentContact.id);
+            alert("Contact supprimé !");
+            $.mobile.changePage("#pageContacts");
+            showContacts(allContacts);
         }
-    } catch (error) {
-        console.error("ERREUR lors de la suppression:", error);
-        alert("Erreur lors de la suppression : " + error.message);
     }
-    
-    console.log("=== FIN SUPPRESSION ===");
-    return false;
 }
 
 /**
  * Crée un nouveau contact
+ * @param {string} name - Nom du contact
+ * @param {string} phone - Numéro de téléphone
+ * @param {string} email - Adresse email (optionnel)
  */
 function createContact(name, phone, email) {
-    console.log("=== DÉBUT CRÉATION CONTACT ===");
-    console.log("Nouvelles données:", { name, phone, email });
-    
-    // Toujours utiliser le mode simulation pour éviter les erreurs API
-    console.log("=== CRÉATION EN MODE SIMULATION ===");
     try {
-        const newContact = {
-            id: Date.now().toString(),
-            displayName: name,
-            name: { 
-                givenName: name.split(' ')[0], 
-                familyName: name.split(' ').slice(1).join(' ') 
-            },
-            phoneNumbers: [{ value: phone, type: "mobile" }],
-            emails: (email && email.trim() !== '') ? [{ value: email, type: "home" }] : [],
-            photos: [{ value: "img/image.png" }]
+        const contact = navigator.contacts.create();
+        contact.displayName = name;
+        
+        const nameParts = name.split(' ');
+        contact.name = {
+            givenName: nameParts[0],
+            familyName: nameParts.slice(1).join(' ')
         };
         
-        allContacts.push(newContact);
-        console.log("Nouveau contact créé! Total contacts:", allContacts.length);
+        contact.phoneNumbers = [new ContactField("mobile", phone, true)];
         
-        alert("Contact ajouté avec succès !");
+        if (email) {
+            contact.emails = [new ContactField("home", email, false)];
+        }
         
-        // Retourner à la liste
-        $.mobile.changePage("#pageContacts");
-        
-        // Mettre à jour l'affichage après un délai
-        setTimeout(() => {
-            console.log("Mise à jour de l'affichage...");
-            showContacts(allContacts);
-        }, 300);
-        
+        contact.save(
+            function(savedContact) {
+                console.log("Contact créé avec succès:", savedContact);
+                $("#saveBtn").prop('disabled', false).text('Enregistrer');
+                alert("Contact ajouté avec succès !");
+                $.mobile.changePage("#pageContacts");
+                // Recharger tous les contacts
+                setTimeout(() => {
+                    if (navigator.contacts) {
+                        loadContacts();
+                    } else {
+                        // En mode simulation, ajouter à la liste existante
+                        allContacts.push(savedContact);
+                        showContacts(allContacts);
+                    }
+                }, 500);
+            },
+            function(error) {
+                console.error("Erreur création contact:", error);
+                $("#saveBtn").prop('disabled', false).text('Enregistrer');
+                onContactError(error);
+            }
+        );
     } catch (error) {
-        console.error("ERREUR lors de la création:", error);
-        alert("Erreur lors de la création : " + error.message);
-    } finally {
-        // Réactiver le bouton dans tous les cas
+        console.error("Exception création contact:", error);
         $("#saveBtn").prop('disabled', false).text('Enregistrer');
+        // Fallback en mode simulation
+        saveContactSimulation(name, phone, email);
     }
-    
-    console.log("=== FIN CRÉATION CONTACT ===");
 }
 
 /**
  * Met à jour un contact existant
+ * @param {Object} contact - Contact à mettre à jour
+ * @param {string} name - Nouveau nom
+ * @param {string} phone - Nouveau numéro de téléphone
+ * @param {string} email - Nouvelle adresse email
  */
 function updateContact(contact, name, phone, email) {
-    console.log("=== DÉBUT MISE À JOUR CONTACT ===");
-    console.log("Contact à modifier:", getContactName(contact));
-    console.log("Nouvelles données:", { name, phone, email });
+    contact.displayName = name;
     
-    // Toujours utiliser le mode simulation pour éviter les erreurs API
-    console.log("=== MODIFICATION EN MODE SIMULATION ===");
-    try {
-        const index = allContacts.findIndex(c => c.id === contact.id);
-        console.log("Index du contact trouvé:", index);
-        
-        if (index !== -1) {
-            // Mettre à jour les données du contact
-            allContacts[index].displayName = name;
-            allContacts[index].name = { 
-                givenName: name.split(' ')[0], 
-                familyName: name.split(' ').slice(1).join(' ') 
-            };
-            allContacts[index].phoneNumbers = [{ value: phone, type: "mobile" }];
-            
-            if (email && email.trim() !== '') {
-                allContacts[index].emails = [{ value: email, type: "home" }];
-            } else {
-                allContacts[index].emails = [];
-            }
-            
-            // Mettre à jour currentContact
-            currentContact = allContacts[index];
-            
-            console.log("Contact modifié avec succès!");
-            alert("Contact modifié avec succès !");
-            
-            // Retourner à la page de détail
-            $.mobile.changePage("#pageDetail");
-            
-            // Mettre à jour l'affichage après un délai
-            setTimeout(() => {
-                console.log("Mise à jour de l'affichage...");
-                showContacts(allContacts);
-                showContactDetail(index);
-            }, 300);
-            
-        } else {
-            console.error("ERREUR: Contact non trouvé pour modification!");
-            alert("Erreur : Contact non trouvé pour modification.");
-        }
-    } catch (error) {
-        console.error("ERREUR lors de la modification:", error);
-        alert("Erreur lors de la modification : " + error.message);
-    } finally {
-        // Réactiver le bouton dans tous les cas
-        $("#saveBtn").prop('disabled', false).text('Enregistrer');
+    const nameParts = name.split(' ');
+    contact.name = {
+        givenName: nameParts[0],
+        familyName: nameParts.slice(1).join(' ')
+    };
+    
+    contact.phoneNumbers = [new ContactField("mobile", phone, true)];
+    
+    if (email) {
+        contact.emails = [new ContactField("home", email, false)];
+    } else {
+        contact.emails = [];
     }
     
-    console.log("=== FIN MISE À JOUR CONTACT ===");
+    contact.save(
+        function() {
+            alert("Contact mis à jour !");
+            $.mobile.changePage("#detailPage");
+            loadContacts();
+        },
+        onContactError
+    );
 }
 
 // === FONCTIONS UTILITAIRES ===
 
 /**
- * Obtient le nom d'affichage d'un contact
+ * Extrait le nom d'affichage d'un contact
+ * @param {Object} contact - Objet contact
+ * @returns {string} Nom du contact
  */
 function getContactName(contact) {
-    return contact.displayName ||
-           (contact.name && contact.name.formatted) ||
-           (contact.name &&
-               ((contact.name.givenName || "") + " " + (contact.name.familyName || "")).trim()) ||
+    return contact.displayName || 
+           (contact.name && contact.name.formatted) || 
+           (contact.name && `${contact.name.givenName || ''} ${contact.name.familyName || ''}`.trim()) ||
            "Sans nom";
 }
 
 /**
- * Obtient la photo d'un contact
- */
-function getContactPhoto(contact) {
-    return contact.photos && contact.photos[0] && contact.photos[0].value
-        ? contact.photos[0].value
-        : "img/image.png";
-}
-
-/**
- * Obtient le téléphone d'un contact
+ * Extrait le numéro de téléphone principal d'un contact
+ * @param {Object} contact - Objet contact
+ * @returns {string} Numéro de téléphone
  */
 function getContactPhone(contact) {
     return (contact.phoneNumbers && contact.phoneNumbers[0] && contact.phoneNumbers[0].value) || "Pas de téléphone";
 }
 
 /**
- * Obtient l'email d'un contact
+ * Extrait l'adresse email principale d'un contact
+ * @param {Object} contact - Objet contact
+ * @returns {string} Adresse email
  */
 function getContactEmail(contact) {
     return (contact.emails && contact.emails[0] && contact.emails[0].value) || "";
 }
 
 /**
- * Obtient les infos de téléphone formatées
+ * Affiche des informations de debug
+ * @param {string} message - Message à afficher
  */
-function getContactPhoneInfo(contact) {
-    if (contact.phoneNumbers && contact.phoneNumbers[0]) {
-        const phone = contact.phoneNumbers[0];
-        return phone.value + (phone.type ? " (" + phone.type + ")" : "");
-    }
-    return "";
+function showDebugInfo(message) {
+    $("#debugInfo").html(`<strong>Debug :</strong> ${message}`).show();
+    console.log("Debug:", message);
 }
 
 /**
- * Valide un email
+ * Gestionnaire d'erreurs pour les opérations sur les contacts
+ * @param {Object} error - Objet erreur
+ */
+function onContactError(error) {
+    console.error("Erreur contact:", error);
+    showDebugInfo(`Erreur : ${error.code} - ${error.message || 'Erreur inconnue'}`);
+    
+    // Messages d'erreur spécifiques
+    switch (error.code) {
+        case 20:
+            showDebugInfo("Permission refusée. Vérifiez les autorisations de l'application pour accéder aux contacts.");
+            break;
+        case 1:
+            showDebugInfo("Erreur inconnue lors de l'opération sur les contacts.");
+            break;
+        case 2:
+            showDebugInfo("Argument invalide fourni à l'API contacts.");
+            break;
+        case 3:
+            showDebugInfo("Opération annulée par l'utilisateur.");
+            break;
+        default:
+            showDebugInfo(`Erreur inattendue : ${error.code}`);
+    }
+}
+
+// === GESTIONNAIRES D'ÉVÉNEMENTS ===
+
+// Gestionnaire de soumission du formulaire
+$(document).on('submit', '#contactForm', function(e) {
+    e.preventDefault();
+    
+    console.log("Soumission du formulaire");
+    
+    const name = $("#name").val().trim();
+    const phone = $("#phone").val().trim();
+    const email = $("#email").val().trim();
+    const id = $("#contactId").val();
+    
+    // Validation des champs obligatoires
+    if (!name || !phone) {
+        alert("Veuillez remplir au minimum le nom et le téléphone.");
+        return false;
+    }
+    
+    // Validation du format de l'email si fourni
+    if (email && !isValidEmail(email)) {
+        alert("Veuillez entrer une adresse email valide.");
+        return false;
+    }
+    
+    // Désactiver le bouton de soumission pour éviter les doubles soumissions
+    $("#saveBtn").prop('disabled', true).text('Enregistrement...');
+    
+    if (navigator.contacts && window.ContactField) {
+        // Mode Cordova - utilisation de l'API native
+        try {
+            if (id && currentContact && currentContact.save) {
+                updateContact(currentContact, name, phone, email);
+            } else {
+                createContact(name, phone, email);
+            }
+        } catch (error) {
+            console.error("Erreur API Cordova:", error);
+            saveContactSimulation(name, phone, email, id);
+        }
+    } else {
+        // Mode simulation pour les tests
+        console.log("Mode simulation - sauvegarde locale");
+        saveContactSimulation(name, phone, email, id);
+    }
+    
+    return false;
+});
+
+/**
+ * Sauvegarde un contact en mode simulation
+ */
+function saveContactSimulation(name, phone, email, id) {
+    try {
+        if (id && currentContact) {
+            // Modification
+            const index = allContacts.findIndex(c => c.id === currentContact.id);
+            if (index !== -1) {
+                allContacts[index].displayName = name;
+                allContacts[index].name = { 
+                    givenName: name.split(' ')[0], 
+                    familyName: name.split(' ').slice(1).join(' ') 
+                };
+                allContacts[index].phoneNumbers = [{ value: phone, type: "mobile" }];
+                if (email) {
+                    allContacts[index].emails = [{ value: email, type: "home" }];
+                } else {
+                    allContacts[index].emails = [];
+                }
+                currentContact = allContacts[index];
+            }
+            alert("Contact modifié avec succès !");
+            $.mobile.changePage("#detailPage");
+        } else {
+            // Création
+            const newContact = {
+                id: Date.now().toString(),
+                displayName: name,
+                name: { 
+                    givenName: name.split(' ')[0], 
+                    familyName: name.split(' ').slice(1).join(' ') 
+                },
+                phoneNumbers: [{ value: phone, type: "mobile" }],
+                emails: email ? [{ value: email, type: "home" }] : []
+            };
+            allContacts.push(newContact);
+            alert("Contact ajouté avec succès !");
+            $.mobile.changePage("#pageContacts");
+        }
+        
+        // Mettre à jour l'affichage
+        showContacts(allContacts);
+        
+    } catch (error) {
+        console.error("Erreur simulation:", error);
+        alert("Erreur lors de la sauvegarde : " + error.message);
+    } finally {
+        // Réactiver le bouton
+        $("#saveBtn").prop('disabled', false).text('Enregistrer');
+    }
+}
+
+/**
+ * Valide le format d'une adresse email
+ * @param {string} email - Adresse email à valider
+ * @returns {boolean} True si l'email est valide
  */
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
 
-/**
- * Gestionnaire d'erreur
- */
-function onError(error) {
-    console.log("Erreur:", error);
-    alert("Une erreur inattendue s'est produite: " + (error.message || error.code || "Erreur inconnue"));
-}
+// === GESTIONNAIRES D'ÉVÉNEMENTS DE PAGE ===
 
-// === GESTIONNAIRES D'ÉVÉNEMENTS ===
-
-// Soumission du formulaire
-$(document).on('submit', '#contactForm', function(e) {
-    e.preventDefault();
-    console.log("=== SOUMISSION FORMULAIRE ===");
-    
-    const name = $("#contactName").val().trim();
-    const phone = $("#contactPhone").val().trim();
-    const email = $("#contactEmail").val().trim();
-    const id = $("#contactId").val();
-    
-    console.log("Données du formulaire:", { name, phone, email, id });
-    console.log("Mode édition:", isEditMode);
-    console.log("Contact actuel:", currentContact ? getContactName(currentContact) : "Aucun");
-    
-    // Validation
-    if (!name || !phone) {
-        alert("Veuillez remplir au minimum le nom et le téléphone.");
-        return false;
-    }
-    
-    if (email && !isValidEmail(email)) {
-        alert("Veuillez entrer une adresse email valide.");
-        return false;
-    }
-    
-    // Désactiver le bouton temporairement
-    $("#saveBtn").prop('disabled', true).text('Enregistrement...');
-    
-    try {
-        if (id && currentContact && isEditMode) {
-            // Modification d'un contact existant
-            console.log("=== MODE MODIFICATION ===");
-            updateContact(currentContact, name, phone, email);
-        } else {
-            // Création d'un nouveau contact
-            console.log("=== MODE CRÉATION ===");
-            createContact(name, phone, email);
-        }
-    } catch (error) {
-        console.error("ERREUR lors de la sauvegarde:", error);
-        alert("Erreur lors de la sauvegarde: " + error.message);
-        // Réactiver le bouton en cas d'erreur
-        $("#saveBtn").prop('disabled', false).text('Enregistrer');
-    }
-    
-    return false;
-});
-
-// Événements de page
-$(document).on("pagebeforeshow", "#pageForm", function() {
-    console.log("=== AFFICHAGE PAGE FORMULAIRE ===");
-    console.log("Mode édition:", isEditMode);
-    console.log("Contact actuel:", currentContact ? getContactName(currentContact) : "Aucun");
-    
+// Avant d'afficher la page formulaire
+$(document).on("pagebeforeshow", "#formPage", function() {
     if (!isEditMode && !currentContact) {
-        console.log("Nouveau contact - formulaire vide");
         clearForm();
     }
-    
-    // S'assurer que le bouton est activé
+    // Réactiver le bouton au cas où
     $("#saveBtn").prop('disabled', false).text('Enregistrer');
 });
 
+// Avant d'afficher la page de liste des contacts
 $(document).on("pagebeforeshow", "#pageContacts", function() {
-    console.log("Affichage page liste contacts");
-    // Recharger si nécessaire ou si la liste est vide
-    if (allContacts.length === 0) {
+    console.log("Affichage page contacts, nombre de contacts:", allContacts.length);
+    // Actualiser la liste si elle est vide et que l'app est prête
+    if (allContacts.length === 0 && isAppReady) {
         console.log("Liste vide, rechargement...");
-        loadContacts();
-    } else {
-        // Rafraîchir l'affichage au cas où
-        showContacts(allContacts);
+        if (navigator.contacts) {
+            loadContacts();
+        } else {
+            simulateContacts();
+        }
     }
 });
 
-$(document).on("pagebeforeshow", "#pageDetail", function() {
-    console.log("Affichage page détail contact");
+// Avant d'afficher la page de détail
+$(document).on("pagebeforeshow", "#detailPage", function() {
+    // S'assurer qu'un contact est sélectionné
     if (!currentContact) {
-        console.log("Pas de contact sélectionné, retour à la liste");
+        console.log("Aucun contact sélectionné, retour à la liste");
         $.mobile.changePage("#pageContacts");
         return false;
     }
+    // Mettre à jour l'affichage du détail
+    showContactDetail(allContacts.indexOf(currentContact));
+});
+
+// Événement de changement de page
+$(document).on("pagechange", function(event, data) {
+    console.log("Changement de page vers:", data.toPage.attr('id'));
 });
 
 // Gestion du bouton retour physique (Android)
-$(document).on("backbutton", function(e) {
-    e.preventDefault();
-    
-    const activePage = $.mobile.activePage ? $.mobile.activePage.attr('id') : 'pageContacts';
-    console.log("Bouton retour pressé sur page:", activePage);
+$(document).on("backbutton", function() {
+    const activePage = $.mobile.activePage.attr('id');
     
     switch (activePage) {
-        case 'pageDetail':
+        case 'detailPage':
             backToList();
             break;
-        case 'pageForm':
+        case 'formPage':
             cancelForm();
             break;
         case 'pageContacts':
         default:
-            // Sur la page principale, quitter l'application
+            // Quitter l'application
             if (navigator.app && navigator.app.exitApp) {
                 navigator.app.exitApp();
-            } else if (navigator.device && navigator.device.exitApp) {
-                navigator.device.exitApp();
             }
             break;
     }

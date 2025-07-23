@@ -1,96 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
     <title>ContacTel</title>
-    <link rel="stylesheet" href="lib/jquery.mobile-1.4.5.min.css" />
-    <link rel="stylesheet" href="css/index.css" />
-    <script src="lib/jquery.min.js"></script>
-    <script src="lib/jquery.mobile-1.4.5.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
     <script src="cordova.js"></script>
-    <script src="js/index.js"></script>
+    <script src="js/contact.js"></script>
 </head>
 <body>
-    <!-- Page principale - Liste des contacts -->
+    <!-- Page Liste des contacts -->
     <div data-role="page" id="pageContacts">
         <div data-role="header">
-            <h1>ContacTel</h1>
-            <a href="#pageForm" data-role="button" data-icon="plus" class="ui-btn-right" onclick="newContact()">Ajouter</a>
+            <h1>Mes contacts</h1>
+            <a href="#formPage" data-icon="plus" class="ui-btn-right" onclick="newContact()">Ajouter</a>
         </div>
-        <div role="main" class="ui-content">
-            <ul
-                id="contactList"
-                data-role="listview"
-                data-inset="true"
-                data-filter="true"
-                data-filter-placeholder="Rechercher un contact..."
-            >
-                <!-- Les contacts seront chargés ici dynamiquement -->
-                
-            </ul>
-        </div>
-        <div data-role="footer" data-position="fixed">
-            <h1>IDYBA &copy; 2025</h1>
+        <div data-role="content">
+            <div id="debugInfo" class="debug-info" style="display:none;"></div>
+            <ul id="contactList" data-role="listview" data-inset="true"></ul>
+            <div id="noContacts" style="display:none; text-align:center; padding:20px;">
+                <p>Aucun contact trouvé.</p>
+                <p><small>Vérifiez les permissions de l'application pour accéder aux contacts.</small></p>
+            </div>
         </div>
     </div>
 
     <!-- Page détail du contact -->
-    <div data-role="page" id="pageDetail">
+    <div data-role="page" id="detailPage">
         <div data-role="header">
             <a href="#pageContacts" data-icon="arrow-l" onclick="backToList()">Retour</a>
             <h1>Détail Contact</h1>
-            <a href="#pageForm" data-icon="edit" class="ui-btn-right" onclick="editCurrentContact()">Modifier</a>
+            <a href="#formPage" data-icon="edit" class="ui-btn-right" onclick="editCurrentContact()">Modifier</a>
         </div>
-        <div role="main" class="ui-content">
+        <div data-role="content">
             <div id="contactDetail" class="contact-detail">
                 <!-- Les détails du contact seront affichés ici -->
             </div>
-            <div class="action-buttons">
-                <button type="button" onclick="callContact()" data-role="button" data-icon="phone" data-theme="b" class="call-btn">Appeler</button>
-                <button type="button" onclick="editCurrentContact()" data-role="button" data-icon="edit" data-theme="a" class="edit-btn">Modifier</button>
-                <button type="button" onclick="deleteCurrentContact()" data-role="button" data-icon="delete" data-theme="c" class="delete-btn">Supprimer</button>
+            <div class="button-group">
+                <button onclick="callContact()" class="ui-btn ui-btn-inline ui-icon-phone ui-btn-icon-left">Appeler</button>
+                <button onclick="editCurrentContact()" class="ui-btn ui-btn-inline ui-icon-edit ui-btn-icon-left">Modifier</button>
+                <button onclick="deleteCurrentContact()" class="ui-btn ui-btn-inline ui-btn-b ui-icon-delete ui-btn-icon-left">Supprimer</button>
             </div>
-        </div>
-        <div data-role="footer" data-position="fixed">
-            <h1>MIIA &copy; 2025</h1>
         </div>
     </div>
 
     <!-- Page formulaire (ajout/modification) -->
-    <div data-role="page" id="pageForm">
+    <div data-role="page" id="formPage">
         <div data-role="header">
             <a href="#" data-icon="arrow-l" onclick="cancelForm()">Retour</a>
             <h1 id="formTitle">Nouveau Contact</h1>
         </div>
-        <div role="main" class="ui-content">
+        <div data-role="content">
             <form id="contactForm">
                 <input type="hidden" id="contactId" />
-                
                 <div data-role="fieldcontain">
-                    <label for="contactName">Nom complet :</label>
-                    <input type="text" id="contactName" name="contactName" required placeholder="Entrez le nom complet" />
+                    <label for="name">Nom complet :</label>
+                    <input type="text" id="name" required placeholder="Entrez le nom complet" />
                 </div>
-                
                 <div data-role="fieldcontain">
-                    <label for="contactPhone">Téléphone :</label>
-                    <input type="tel" id="contactPhone" name="contactPhone" required placeholder="Entrez le numéro de téléphone" />
+                    <label for="phone">Téléphone :</label>
+                    <input type="tel" id="phone" required placeholder="Entrez le numéro de téléphone" />
                 </div>
-                
                 <div data-role="fieldcontain">
-                    <label for="contactEmail">Email (optionnel) :</label>
-                    <input type="email" id="contactEmail" name="contactEmail" placeholder="Entrez l'adresse email" />
+                    <label for="email">Email (optionnel) :</label>
+                    <input type="email" id="email" placeholder="Entrez l'adresse email" />
                 </div>
-                
                 <div class="button-group">
-                    <button type="submit" id="saveBtn" data-theme="a" data-icon="check">Enregistrer</button>
-                    <button type="button" onclick="cancelForm()" data-theme="c" data-icon="delete">Annuler</button>
+                    <button type="submit" id="saveBtn" class="ui-btn ui-btn-a ui-icon-check ui-btn-icon-left">Enregistrer</button>
+                    <button type="button" onclick="cancelForm()" class="ui-btn ui-btn-c ui-icon-delete ui-btn-icon-left">Annuler</button>
                 </div>
             </form>
-        </div>
-        <div data-role="footer" data-position="fixed">
-            <h1>IDYBA &copy; 2025</h1>
         </div>
     </div>
 </body>
