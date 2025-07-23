@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ContacTel</title>
+    <link rel="stylesheet" href="lib/jquery.mobile-1.4.5.min.css" />
+    <link rel="stylesheet" href="css/index.css" />
+    <script src="lib/jquery.min.js"></script>
+    <script src="lib/jquery.mobile-1.4.5.min.js"></script>
+    <script src="cordova.js"></script>
+    <script src="js/index.js"></script>
+</head>
+<body>
+    <!-- Page principale - Liste des contacts -->
+    <div data-role="page" id="pageContacts">
+        <div data-role="header">
+            <h1>ContacTel</h1>
+            <a href="#pageForm" data-role="button" data-icon="plus" class="ui-btn-right" onclick="newContact()">Ajouter</a>
+        </div>
+        <div role="main" class="ui-content">
+            <ul
+                id="contactList"
+                data-role="listview"
+                data-inset="true"
+                data-filter="true"
+                data-filter-placeholder="Rechercher un contact..."
+            >
+                <!-- Les contacts seront chargés ici dynamiquement -->
+                
+            </ul>
+        </div>
+        <div data-role="footer" data-position="fixed">
+            <h1>IDYBA &copy; 2025</h1>
+        </div>
+    </div>
+
+    <!-- Page détail du contact -->
+    <div data-role="page" id="pageDetail">
+        <div data-role="header">
+            <a href="#pageContacts" data-icon="arrow-l" onclick="backToList()">Retour</a>
+            <h1>Détail Contact</h1>
+            <a href="#pageForm" data-icon="edit" class="ui-btn-right" onclick="editCurrentContact()">Modifier</a>
+        </div>
+        <div role="main" class="ui-content">
+            <div id="contactDetail" class="contact-detail">
+                <!-- Les détails du contact seront affichés ici -->
+            </div>
+            <div class="action-buttons">
+                <button type="button" onclick="callContact()" data-role="button" data-icon="phone" data-theme="b" class="call-btn">Appeler</button>
+                <button type="button" onclick="editCurrentContact()" data-role="button" data-icon="edit" data-theme="a" class="edit-btn">Modifier</button>
+                <button type="button" onclick="deleteCurrentContact()" data-role="button" data-icon="delete" data-theme="c" class="delete-btn">Supprimer</button>
+            </div>
+        </div>
+        <div data-role="footer" data-position="fixed">
+            <h1>MIIA &copy; 2025</h1>
+        </div>
+    </div>
+
+    <!-- Page formulaire (ajout/modification) -->
+    <div data-role="page" id="pageForm">
+        <div data-role="header">
+            <a href="#" data-icon="arrow-l" onclick="cancelForm()">Retour</a>
+            <h1 id="formTitle">Nouveau Contact</h1>
+        </div>
+        <div role="main" class="ui-content">
+            <form id="contactForm">
+                <input type="hidden" id="contactId" />
+                
+                <div data-role="fieldcontain">
+                    <label for="contactName">Nom complet :</label>
+                    <input type="text" id="contactName" name="contactName" required placeholder="Entrez le nom complet" />
+                </div>
+                
+                <div data-role="fieldcontain">
+                    <label for="contactPhone">Téléphone :</label>
+                    <input type="tel" id="contactPhone" name="contactPhone" required placeholder="Entrez le numéro de téléphone" />
+                </div>
+                
+                <div data-role="fieldcontain">
+                    <label for="contactEmail">Email (optionnel) :</label>
+                    <input type="email" id="contactEmail" name="contactEmail" placeholder="Entrez l'adresse email" />
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" id="saveBtn" data-theme="a" data-icon="check">Enregistrer</button>
+                    <button type="button" onclick="cancelForm()" data-theme="c" data-icon="delete">Annuler</button>
+                </div>
+            </form>
+        </div>
+        <div data-role="footer" data-position="fixed">
+            <h1>IDYBA &copy; 2025</h1>
+        </div>
+    </div>
+</body>
+</html>
